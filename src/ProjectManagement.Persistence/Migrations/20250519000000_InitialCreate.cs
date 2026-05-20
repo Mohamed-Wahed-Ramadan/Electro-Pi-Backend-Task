@@ -78,7 +78,7 @@ public partial class InitialCreate : Migration
             {
                 Id = table.Column<Guid>(type: "uniqueidentifier", nullable: false),
                 Title = table.Column<string>(type: "nvarchar(300)", maxLength: 300, nullable: false),
-                Description = table.Column<string>(type: "nvarchar(5000)", maxLength: 5000, nullable: false),
+                Description = table.Column<string>(type: "nvarchar(max)", maxLength: 5000, nullable: false),
                 Status = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
                 Priority = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
                 DueDate = table.Column<DateTime>(type: "datetime2", nullable: true),

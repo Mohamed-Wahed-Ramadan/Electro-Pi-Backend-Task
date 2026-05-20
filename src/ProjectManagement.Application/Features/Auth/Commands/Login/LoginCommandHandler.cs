@@ -30,8 +30,8 @@ public class LoginCommandHandler : IRequestHandler<LoginCommand, Result<AuthResp
             return Result<AuthResponse>.Failure("Invalid email or password.");
 
         var tokens = _tokenService.GenerateTokens(user);
-        var refreshRepo = _unitOfWork.Repository<RefreshToken>();
-        await refreshRepo.AddAsync(new RefreshToken
+        var refreshRepo = _unitOfWork.Repository<ProjectManagement.Domain.Entities.RefreshToken>();
+        await refreshRepo.AddAsync(new ProjectManagement.Domain.Entities.RefreshToken
         {
             Token = tokens.RefreshToken,
             ExpiresAt = tokens.RefreshTokenExpiresAt,
