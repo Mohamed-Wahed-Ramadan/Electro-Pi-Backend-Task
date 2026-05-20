@@ -14,7 +14,19 @@ public class RedisCacheService : ICacheService
     public async Task<T?> GetAsync<T>(string key, CancellationToken cancellationToken = default)
     {
         var data = await _cache.GetStringAsync(key, cancellationToken);
-        return data == null ? default : JsonSerializer.Deserialize<T>(data, JsonOptions);
+        if (data == null)
+            return default;
+
+        try
+        {
+            return JsonSerializer.Deserialize<T>(data, JsonOptions);
+        }
+        catch (Exception ex) when (ex is JsonException or InvalidOperationException)
+        {
+            // Cached payload shape may become stale after DTO/model changes.
+            await _cache.RemoveAsync(key, cancellationToken);
+            return default;
+        }
     }
 
     public async Task SetAsync<T>(string key, T value, TimeSpan? expiration = null, CancellationToken cancellationToken = default)

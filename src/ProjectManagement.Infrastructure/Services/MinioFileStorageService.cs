@@ -56,11 +56,37 @@ public class MinioFileStorageService : IFileStorageService
             .WithObject(objectKey)
             .WithExpiry((int)expiry.TotalSeconds);
 
-        return await _client.PresignedGetObjectAsync(args);
+        var url = await _client.PresignedGetObjectAsync(args);
+        return RewriteToPublicUrl(url);
     }
 
     public async Task DeleteAsync(string objectKey, string bucket, CancellationToken cancellationToken = default)
     {
         await _client.RemoveObjectAsync(new RemoveObjectArgs().WithBucket(bucket).WithObject(objectKey), cancellationToken);
+    }
+
+    private string RewriteToPublicUrl(string url)
+    {
+        if (string.IsNullOrWhiteSpace(_settings.PublicUrl))
+            return url;
+
+        try
+        {
+            var source = new Uri(url);
+            var target = new Uri(_settings.PublicUrl);
+
+            var builder = new UriBuilder(source)
+            {
+                Scheme = target.Scheme,
+                Host = target.Host,
+                Port = target.IsDefaultPort ? -1 : target.Port
+            };
+
+            return builder.Uri.ToString();
+        }
+        catch
+        {
+            return url;
+        }
     }
 }

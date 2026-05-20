@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { projectService } from '../services/projectService';
 import Modal from '../components/Modal';
 import { CardSkeleton } from '../components/Skeleton';
+import { toPublicAssetUrl } from '../lib/assetUrl';
 
 export default function ProjectsPage() {
   const [search, setSearch] = useState('');
@@ -29,6 +30,15 @@ export default function ProjectsPage() {
       setForm({ name: '', description: '' });
     },
     onError: () => toast.error('Failed to create project'),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => projectService.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      toast.success('Project deleted');
+    },
+    onError: () => toast.error('Failed to delete project'),
   });
 
   return (
@@ -55,15 +65,30 @@ export default function ProjectsPage() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {data?.items.map((project, i) => (
               <motion.div key={project.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
-                <Link to={`/projects/${project.id}`} className="card block transition hover:shadow-md hover:border-brand-200 dark:hover:border-brand-700">
-                  {project.coverImageUrl && <img src={project.coverImageUrl} alt="" className="mb-3 h-32 w-full rounded-lg object-cover" />}
+                <div className="card transition hover:shadow-md hover:border-brand-200 dark:hover:border-brand-700">
+                  <div className="mb-2 flex justify-end">
+                    <button
+                      type="button"
+                      className="rounded-lg p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+                      onClick={() => {
+                        if (confirm('Delete this project?')) {
+                          deleteMutation.mutate(project.id);
+                        }
+                      }}
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                  <Link to={`/projects/${project.id}`} className="block">
+                    {project.coverImageUrl && <img src={toPublicAssetUrl(project.coverImageUrl)} alt="" className="mb-3 h-32 w-full rounded-lg object-cover" />}
                   <h3 className="font-semibold">{project.name}</h3>
                   <p className="mt-1 line-clamp-2 text-sm text-slate-500">{project.description}</p>
                   <div className="mt-3 flex items-center justify-between text-xs text-slate-400">
                     <span>{project.taskCount} tasks</span>
                     <span>{project.ownerName}</span>
                   </div>
-                </Link>
+                  </Link>
+                </div>
               </motion.div>
             ))}
           </div>

@@ -2,19 +2,21 @@ using ProjectManagement.Domain.Enums;
 
 namespace ProjectManagement.Application.DTOs.Tasks;
 
-public record TaskDto(
-    Guid Id,
-    string Title,
-    string Description,
-    Domain.Enums.TaskStatus Status,
-    TaskPriority Priority,
-    DateTime? DueDate,
-    Guid ProjectId,
-    Guid? AssignedUserId,
-    string? AssignedUserName,
-    string? AttachmentUrl,
-    DateTime CreatedAt,
-    DateTime? UpdatedAt);
+public class TaskDto
+{
+    public Guid Id { get; set; }
+    public string Title { get; set; } = default!;
+    public string Description { get; set; } = default!;
+    public Domain.Enums.TaskStatus Status { get; set; }
+    public TaskPriority Priority { get; set; }
+    public DateTime? DueDate { get; set; }
+    public Guid ProjectId { get; set; }
+    public Guid? AssignedUserId { get; set; }
+    public string? AssignedUserName { get; set; }
+    public string? AttachmentUrl { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime? UpdatedAt { get; set; }
+}
 
 public record CreateTaskRequest(
     string Title,

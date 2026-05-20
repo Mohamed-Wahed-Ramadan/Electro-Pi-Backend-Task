@@ -8,6 +8,7 @@ import { projectService } from '../services/projectService';
 import { taskService } from '../services/taskService';
 import Modal from '../components/Modal';
 import { CardSkeleton } from '../components/Skeleton';
+import { toPublicAssetUrl } from '../lib/assetUrl';
 
 const statuses = ['Pending', 'InProgress', 'Completed'];
 const priorities = ['Low', 'Medium', 'High', 'Critical'];
@@ -98,7 +99,7 @@ export default function ProjectDetailPage() {
             <input type="file" accept="image/*" className="hidden" onChange={uploadCover} />
           </label>
         </div>
-        {project?.coverImageUrl && <img src={project.coverImageUrl} alt="" className="mt-4 h-48 w-full rounded-lg object-cover" />}
+        {project?.coverImageUrl && <img src={toPublicAssetUrl(project.coverImageUrl)} alt="" className="mt-4 h-48 w-full rounded-lg object-cover" />}
       </div>
 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -129,7 +130,7 @@ export default function ProjectDetailPage() {
                   <span className="rounded bg-slate-100 px-2 py-0.5 dark:bg-slate-800">{task.priority}</span>
                   {task.dueDate && <span className="text-slate-400">Due: {new Date(task.dueDate).toLocaleDateString()}</span>}
                 </div>
-                {task.attachmentUrl && <a href={task.attachmentUrl} target="_blank" rel="noreferrer" className="mt-1 block text-xs text-brand-600">View attachment</a>}
+                {task.attachmentUrl && <a href={toPublicAssetUrl(task.attachmentUrl)} target="_blank" rel="noreferrer" className="mt-1 block text-xs text-brand-600">View attachment</a>}
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <select className="input max-w-[140px] py-1 text-sm" value={task.status} onChange={(e) => updateStatus.mutate({ taskId: task.id, status: e.target.value })}>
