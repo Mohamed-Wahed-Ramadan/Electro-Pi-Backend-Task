@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Plus, Search, Trash2 } from 'lucide-react';
+import { Pencil, Plus, Search, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { projectService } from '../services/projectService';
 import Modal from '../components/Modal';
@@ -13,7 +13,10 @@ export default function ProjectsPage() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [modalOpen, setModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [editingProjectId, setEditingProjectId] = useState<string | null>(null);
   const [form, setForm] = useState({ name: '', description: '' });
+  const [editForm, setEditForm] = useState({ name: '', description: '' });
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
@@ -39,6 +42,18 @@ export default function ProjectsPage() {
       toast.success('Project deleted');
     },
     onError: () => toast.error('Failed to delete project'),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: () => projectService.update(editingProjectId!, editForm),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['projects'] });
+      toast.success('Project updated');
+      setEditModalOpen(false);
+      setEditingProjectId(null);
+      setEditForm({ name: '', description: '' });
+    },
+    onError: () => toast.error('Failed to update project'),
   });
 
   return (
@@ -67,6 +82,17 @@ export default function ProjectsPage() {
               <motion.div key={project.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}>
                 <div className="card transition hover:shadow-md hover:border-brand-200 dark:hover:border-brand-700">
                   <div className="mb-2 flex justify-end">
+                    <button
+                      type="button"
+                      className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+                      onClick={() => {
+                        setEditingProjectId(project.id);
+                        setEditForm({ name: project.name, description: project.description });
+                        setEditModalOpen(true);
+                      }}
+                    >
+                      <Pencil size={16} />
+                    </button>
                     <button
                       type="button"
                       className="rounded-lg p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
@@ -113,6 +139,20 @@ export default function ProjectsPage() {
             <textarea className="input min-h-[100px]" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} />
           </div>
           <button type="submit" className="btn-primary w-full" disabled={createMutation.isPending}>Create</button>
+        </form>
+      </Modal>
+
+      <Modal open={editModalOpen} onClose={() => setEditModalOpen(false)} title="Update Project">
+        <form onSubmit={(e) => { e.preventDefault(); updateMutation.mutate(); }} className="space-y-4">
+          <div>
+            <label className="mb-1 block text-sm font-medium">Name</label>
+            <input className="input" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} required />
+          </div>
+          <div>
+            <label className="mb-1 block text-sm font-medium">Description</label>
+            <textarea className="input min-h-[100px]" value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} />
+          </div>
+          <button type="submit" className="btn-primary w-full" disabled={updateMutation.isPending}>Save Changes</button>
         </form>
       </Modal>
     </div>
