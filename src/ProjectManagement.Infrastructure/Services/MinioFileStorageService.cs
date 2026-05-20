@@ -31,6 +31,23 @@ public class MinioFileStorageService : IFileStorageService
                 await _client.MakeBucketAsync(new MakeBucketArgs().WithBucket(bucket), cancellationToken);
                 _logger.LogInformation("Created MinIO bucket: {Bucket}", bucket);
             }
+
+            // Allow public read so browser can load uploaded files from PublicUrl.
+            var policy = $$"""
+            {
+              "Version": "2012-10-17",
+              "Statement": [
+                {
+                  "Effect": "Allow",
+                  "Principal": { "AWS": ["*"] },
+                  "Action": ["s3:GetObject"],
+                  "Resource": ["arn:aws:s3:::{{bucket}}/*"]
+                }
+              ]
+            }
+            """;
+
+            await _client.SetPolicyAsync(new SetPolicyArgs().WithBucket(bucket).WithPolicy(policy), cancellationToken);
         }
     }
 
@@ -51,13 +68,15 @@ public class MinioFileStorageService : IFileStorageService
 
     public async Task<string> GetPresignedUrlAsync(string objectKey, string bucket, TimeSpan expiry, CancellationToken cancellationToken = default)
     {
+        if (!string.IsNullOrWhiteSpace(_settings.PublicUrl))
+            return BuildPublicObjectUrl(objectKey, bucket);
+
         var args = new PresignedGetObjectArgs()
             .WithBucket(bucket)
             .WithObject(objectKey)
             .WithExpiry((int)expiry.TotalSeconds);
 
-        var url = await _client.PresignedGetObjectAsync(args);
-        return RewriteToPublicUrl(url);
+        return await _client.PresignedGetObjectAsync(args);
     }
 
     public async Task DeleteAsync(string objectKey, string bucket, CancellationToken cancellationToken = default)
@@ -65,28 +84,11 @@ public class MinioFileStorageService : IFileStorageService
         await _client.RemoveObjectAsync(new RemoveObjectArgs().WithBucket(bucket).WithObject(objectKey), cancellationToken);
     }
 
-    private string RewriteToPublicUrl(string url)
+    private string BuildPublicObjectUrl(string objectKey, string bucket)
     {
-        if (string.IsNullOrWhiteSpace(_settings.PublicUrl))
-            return url;
-
-        try
-        {
-            var source = new Uri(url);
-            var target = new Uri(_settings.PublicUrl);
-
-            var builder = new UriBuilder(source)
-            {
-                Scheme = target.Scheme,
-                Host = target.Host,
-                Port = target.IsDefaultPort ? -1 : target.Port
-            };
-
-            return builder.Uri.ToString();
-        }
-        catch
-        {
-            return url;
-        }
+        var baseUrl = _settings.PublicUrl.TrimEnd('/');
+        var encodedSegments = objectKey.Split('/', StringSplitOptions.RemoveEmptyEntries)
+            .Select(Uri.EscapeDataString);
+        return $"{baseUrl}/{bucket}/{string.Join("/", encodedSegments)}";
     }
 }
